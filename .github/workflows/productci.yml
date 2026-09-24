@@ -42,7 +42,7 @@ jobs:
       - name: Create test environment
         run: |
           echo "PORT=3000" > .env
-          echo "MONGO_URI=mongodb://admin:admin123@host.docker.internal:27017/productdb?authSource=admin" >> .env
+          echo "MONGO_URI=mongodb://admin:admin123@127.0.0.1:27017/productdb?authSource=admin" >> .env
 
       - name: Start Product API
         run: |
