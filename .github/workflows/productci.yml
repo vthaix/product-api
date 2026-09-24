@@ -4,15 +4,27 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
     branches:
       - main
-      - master
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:8
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: admin123
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --username admin --password admin123 --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout source code
@@ -21,14 +33,35 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Create test environment
+        run: |
+          echo "PORT=3000" > .env
+          echo "MONGO_URI=mongodb://admin:admin123@127.0.0.1:27017/productdb?authSource=admin" >> .env
+
+      - name: Start Product API
+        run: |
+          nohup npm start > product-api.log 2>&1 &
+          
+      - name: Wait for Product API
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://localhost:3000/health; then
+              echo "Product API is ready"
+              exit 0
+            fi
+            echo "Waiting for Product API..."
+            sleep 2
+          done
+
+          echo "Product API failed to start"
+          cat product-api.log
+          exit 1
+
       - name: Run tests
         run: npm test
-
-      - name: Build Docker image
-        run: docker build -t product-api:ci .
