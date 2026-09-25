@@ -8,6 +8,9 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
 
+    ports:
+      - "27017:27017"
+
     volumes:
       - mongodb_prod_data:/data/db
 
@@ -28,6 +31,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   product-api:
     image: tranvanthai0412/product-api:latest
